@@ -1,6 +1,6 @@
 import { useState } from "react";
 import ReactCompareImage from "react-compare-image";
-import Head from 'next/head'; // Importamos o Head para metadados específicos da página
+import Head from 'next/head';
 
 export default function Home() {
   const [originalPhoto, setOriginalPhoto] = useState(null);
@@ -8,11 +8,9 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   
-  // Limite máximo de upload em bytes (4MB) para evitar falhas no Vercel/Replicate
   const MAX_FILE_SIZE_MB = 4;
   const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
 
-  // Função para lidar com o upload do arquivo
   const handleUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -20,16 +18,15 @@ export default function Home() {
     setError(null);
     setRestoredPhoto(null);
 
-    // --- CHECAGEM DE TAMANHO ---
+    // CHECAGEM DE TAMANHO para evitar falha no Vercel (4MB)
     if (file.size > MAX_FILE_SIZE_BYTES) {
       setError(`O arquivo é muito grande. O limite é de ${MAX_FILE_SIZE_MB}MB.`);
       return; 
     }
-    // ---------------------------
     
     setLoading(true);
     
-    // Converte a imagem para Base64 (Data URI)
+    // Converte para Base64
     const reader = new FileReader();
     reader.readAsDataURL(file);
     reader.onload = async () => {
@@ -37,7 +34,7 @@ export default function Home() {
       setOriginalPhoto(base64Image);
 
       try {
-        // CHAMA A ROTA DA API: /api/restore
+        // CHAMADA DE API: A ROTA QUE DEVE FUNCIONAR
         const response = await fetch("/api/restore", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -47,12 +44,13 @@ export default function Home() {
         const data = await response.json();
 
         if (response.status !== 200) {
-          setError(data.message || "Erro desconhecido da API. Verifique os logs do Vercel.");
+          // Exibe o erro retornado pela sua API
+          setError(data.message || `Erro HTTP ${response.status}. Verifique o Vercel Log para mais detalhes.`);
         } else {
-          setRestoredPhoto(data.restored[0]); // Pega o primeiro URL de resultado
+          setRestoredPhoto(data.restored[0]);
         }
       } catch (err) {
-        setError("Erro ao conectar com o servidor.");
+        setError("Erro de rede. A API pode não ter sido construída corretamente.");
       } finally {
         setLoading(false);
       }
@@ -72,9 +70,6 @@ export default function Home() {
           <p className="text-gray-400 mb-8 text-lg">
             Transforme fotos borradas ou antigas em HD usando IA.
           </p>
-
-          {/* O mesmo layout de upload */}
-          {/* ... (O restante do código de layout que já enviamos permanece o mesmo) */}
 
           {/* Área de Upload */}
           {!originalPhoto && (
